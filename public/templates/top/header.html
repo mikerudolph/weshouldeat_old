@@ -1,0 +1,14 @@
+<script>
+    app_root = 'http://weshouldeat.com';
+    //app_root = 'http://localhost';
+    socket = io.connect( app_root + ':80' );
+    socket.on('connect', function() {
+        socket.emit('init');
+    });
+</script>
+
+<div class="navbar navbar-inverse navbar-static-top">
+    <div class="navbar-inner">
+        <a class="brand" href="/">We Should Eat!</a>
+    </div>
+</div>

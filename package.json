@@ -1,0 +1,15 @@
+{ 
+  "name": "weshouldeat",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node app"
+  },
+  "dependencies": {
+    "express": "*",
+    "oauth": "*",
+    "redis": "*",
+    "socket.io": "*",
+    "twit": "*"
+  }
+}

@@ -1,0 +1,40 @@
+<script>
+    socket.on('listrooms', function(rooms) {
+        if ( rooms.length  ) {
+            var el = $('#room-listing ul');
+                el.empty();
+
+            for ( var i=0; i<rooms.length; i++) {
+                el.append(
+                    '<li class="join-room">'+
+                        '<a href="/#/' + rooms[i] + '">' + rooms[i] + '</a>'+
+                    '</li>'
+                );
+            }
+        }
+    });
+
+    $('#workplaceInput').keyup(function(e) {
+        if (e.keyCode == 13) {
+            socket.emit('addRoom', $(this).val());
+            window.location = app_root + '/#/' + $(this).val();
+        }
+    });
+</script>
+<div class="row-fluid">
+    <div class="find-a-room span6 offset3">
+        <h2>Welcome</h2>
+
+        <p class="lead">
+            Great, you logged in! <br />Now just tell us where you work, or if someone from your office has already started looking for a place click your office name below.
+        </p>
+
+        <input id="workplaceInput" type="text" placeholder="I work at Starbucks!">
+
+        <div id="room-listing">
+            <ul class="unstyled">
+                nothing here...
+            </ul>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,186 @@
+<div class="row-fluid">
+    <div class="map_activity span8">
+        <div id="map_canvas" style="width:100%; height:300px"></div>
+    </div>
+
+    <div class="activty span4">
+        <h3>Activity</h3>
+
+        <div class="activity-inner">
+            <ul class="unstyled">
+            </ul>
+        </div>
+
+        <button id="suggest-btn" class="btn btn-large btn-info" type="button">Suggest a place!</button>
+    </div>
+</div>
+
+<div class="row-fluid">
+    <div class="suggestions-list span12">
+        <ul class="thumbnails">
+        </ul>
+    </div>
+</div>
+
+<div id="suggest-modal" class="modal hide fade">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3>Suggest a place to eat!</h3>
+    </div>
+
+    <div class="modal-body">
+        <input id="autoCompleteTest" type="text" size="200" />
+    </div>
+</div>
+
+<script>
+(function($) {
+    /*  Quick hacking to get current room on
+        client side incase user hits url directly */
+    app_root = 'http://weshouldeat.com';
+    var url      = document.URL,
+        split = url.split('/#/');
+        currentRoom = split[1];
+
+    $.get(app_root + '/api/auth/current/', function(user) {
+        socket.emit('joinRoom', currentRoom, user);
+    });
+
+    socket.on('updateActions', function(action) {
+        var el = $('.activity-inner ul');
+        var uid = $(action).attr('data-user-id');
+
+        $.get(app_root + '/api/users/'+uid, function(user) {
+            /* Check user bg color incase its dark for white text */ 
+            var colorIs = lightOrDark(user['background_color']);
+            var textColor = '';
+
+            if ( colorIs === 'dark' ) {
+                textColor = '#fff';
+            }
+
+            var li = '<li style="background:#' + user['background_color'] + '; color:' + textColor + '">' +        '<img src="' + user['profile_image'] + '" />' + 
+                        action +
+                    '</li>';
+            el.prepend(li);
+        });
+    });
+
+    socket.on('sendSuggestion', function(suggestion) {
+        var el = $('.suggestions-list .thumbnails');
+        var li = '<li class="span4" data-suggest-name="'+ suggestion['name'] +'" data-lng="'+ suggestion['lng'] +'" data-lat="'+ suggestion['lat'] +'">'+
+                        '<div class="thumbnail">'+
+                            '<div class="caption">'+
+                                '<h3>'+ suggestion['name'] +'</h3>'+
+                                '<p>This place was suggested by '+ suggestion['real_name'] +'</p>'+
+                                '<p><button class="place-vote btn btn-primary" data-vote-name="'+ suggestion['name'] +'">Vote for this!</button></p>'+
+                            '</div>'+
+                        '</div>'+
+                    '</li>';
+        el.prepend(li);
+
+        $('#suggest-modal').modal('hide');
+
+        // Might seem hacky to use unbind, only solution for way bringing suggestions in though :)
+        $('.place-vote').unbind('click').click(function() {
+            var place = $(this).attr('data-vote-name');
+            $.get(app_root + '/api/auth/current/', function(user) {
+                socket.emit('voteSent', currentRoom, place, user);
+            });
+        });
+    });
+
+    $('#suggest-btn').click(function() {
+        $('#suggest-modal').modal();
+    });
+
+    /* Google Maps API */
+    var gmapInit = function() {
+        var mapOptions  = { zoom: 16, mapTypeId: google.maps.MapTypeId.ROADMAP },
+        map             = new google.maps.Map(document.getElementById('map_canvas'), mapOptions),
+        input           = document.getElementById('autoCompleteTest'),
+        autocomplete    = new google.maps.places.Autocomplete(input),
+        infowindow      = new google.maps.InfoWindow(),
+        marker          = new google.maps.Marker({ map: map });
+
+        autocomplete.bindTo('bounds', map);
+
+        google.maps.event.addListener(autocomplete, 'place_changed', function() {
+            var place = autocomplete.getPlace();
+                map.setZoom(16);
+
+            $.get(app_root + '/api/auth/current/', function(user) {
+                var lat = place.geometry.location.lat(),
+                    lng = place.geometry.location.lng(),
+                    placeObject = {
+                        uid: user['uid'],
+                        real_name: user['real_name'],
+                        lat: lat.toString(),
+                        lng: lng.toString(),
+                        name: place.name
+                    }
+                    socket.emit('placeSuggested', placeObject, currentRoom);
+            });
+        });
+
+        socket.on('updateMostVoted', function(mostVoted) {
+            var placeName = mostVoted[0],
+                placeDiv  = $('li[data-suggest-name="'+ placeName +'"]'),
+                lat       = placeDiv.attr('data-lat'),
+                lng       = placeDiv.attr('data-lng');
+
+            if ( typeof placeName === 'undefined' ) {
+                if ( navigator.geolocation ) {
+                    navigator.geolocation.getCurrentPosition(function(success, error) {
+                        var lat = success.coords.latitude,
+                            lng = success.coords.longitude;
+
+                        marker.setPosition(new google.maps.LatLng(lat, lng));
+                        map.setCenter(new google.maps.LatLng(lat,lng), 16);
+                    });
+                } else {
+                    var lat = 44.64886,
+                        lng = -63.57532;
+                    marker.setPosition(new google.maps.LatLng(lat, lng));
+                    map.setCenter(new google.maps.LatLng(lat,lng), 16);
+                }
+            } else {
+                marker.setPosition(new google.maps.LatLng(lat, lng));
+                map.setCenter(new google.maps.LatLng(lat,lng), 16);  
+            }
+        });
+    }
+    gmapInit();
+
+})(jQuery);
+
+//Note: this code is based off jQuery plugin here: https://gist.github.com/1636338
+var lightOrDark = function(color) {
+    var r, b, g, hsp, a = color;
+
+    if (a.match(/^rgb/)) {
+        a = a.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/);
+        r = a[1];
+        b = a[2];
+        g = a[3];
+    } else {
+        a = +("0x" + a.slice(1).replace( // thanks to jed : http://gist.github.com/983661
+        a.length < 5 && /./g, '$&$&'));
+        r = a >> 16;
+        b = a >> 8 & 255;
+        g = a & 255;
+    }
+
+    hsp = Math.sqrt( // HSP equation from http://alienryderflex.com/hsp.html
+        0.299 * (r * r) +
+        0.587 * (g * g) +
+        0.114 * (b * b)
+    );
+
+    if (hsp>127.5) {
+        return 'light';
+    } else {
+        return 'dark';
+    }
+}
+</script>

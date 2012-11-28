@@ -1,0 +1,70 @@
+/*
+    Custom defined styles 
+    outside of bootstrap
+*/
+
+.jumbotron {
+    margin-top: 250px;
+    text-align: center;
+}
+
+#suggest-btn {
+    display: block;
+    margin: 0 auto;
+}
+
+.suggestions-list {
+    margin-top: 10px;
+    padding: 0 5px;
+}
+
+/* Find a room */
+
+.find-a-room {
+    margin-top: 100px;
+    text-align: center;
+}
+
+/* Overwrite Google's autocomplete dropdown */
+
+.pac-container {
+    z-index: 9999 !important;
+}
+
+/* Map */
+
+.map_activity {
+    padding: 0 0 0 5px;
+    margin-top: 21px;
+}
+
+/* Activity Listing */
+
+.activty {
+    padding: 0 5px 0 0;
+}
+
+.activity-inner {
+    height: 207px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.activity-inner li img {
+    width: 25px;
+    height: 25px;
+    margin: 0 3px 3px 0;
+
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+}
+
+.activity-inner li {
+    padding: 5px;
+    margin: 3px 0;
+
+    border-radius: 3px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+}
